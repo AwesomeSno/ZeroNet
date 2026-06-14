@@ -1,0 +1,16 @@
+[project]
+name = "zeronet"
+version = "0.1.0"
+description = "A serverless, peer-to-peer, end-to-end encrypted LAN messaging and file sharing app"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "PyQt6>=6.4.0",
+    "zeroconf>=0.131.0",
+    "cryptography>=41.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+]
