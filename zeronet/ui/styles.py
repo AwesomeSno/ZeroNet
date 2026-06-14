@@ -1,174 +1,130 @@
-# PyQt6 stylesheet for ZeroNet
-# Implements a premium, modern dark mode with neon cyan accents,
-# glassmorphic card stylings, and clean rounded components.
+# PyQt6 QSS stylesheet for ZeroNet
+# Implements a Windows 95 / ICQ retro theme with classic teal background,
+# gray window borders, beveled buttons, and monospace fonts.
 
 MAIN_STYLE = """
 /* General Application Styles */
+QMainWindow {
+    background-color: #008080; /* Classic Teal Desktop */
+}
+
 QWidget {
-    background-color: #0f172a;
-    color: #f8fafc;
-    font-family: 'Segoe UI', -apple-system, Roboto, Helvetica, sans-serif;
-    font-size: 13px;
+    background-color: #c0c0c0; /* Win95 Light Gray */
+    color: #000000;
+    font-family: 'Fixedsys', 'Courier New', 'MS Sans Serif', monospace;
+    font-size: 12px;
 }
 
-/* Sidebar Styling */
-QFrame#sidebar {
-    background-color: #1e293b;
-    border-right: 1px solid #334155;
+/* Beveled Frames */
+QFrame#sidebar, QFrame#chat_panel_frame {
+    background-color: #c0c0c0;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff; /* Outset bevel */
+    margin: 4px;
 }
 
-/* Sidebar List Widget */
-QListWidget {
-    background-color: transparent;
-    border: none;
-    outline: 0;
+/* User profile header */
+QFrame#profile_frame, QFrame#header_frame {
+    background-color: #c0c0c0;
+    border-bottom: 2px solid #808080;
+    padding: 6px;
 }
 
+/* Inputs and Lists (white background, inset bevel) */
+QLineEdit, QTextEdit, QListWidget {
+    background-color: #ffffff;
+    color: #000000;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080; /* Inset bevel */
+    padding: 4px;
+    selection-background-color: #000080;
+    selection-color: #ffffff;
+}
+
+QLineEdit:focus, QTextEdit:focus {
+    border: 2px solid;
+    border-color: #000000 #ffffff #ffffff #000000; /* Darker inset on focus */
+}
+
+/* Peer List Items */
 QListWidget::item {
-    padding: 12px;
-    border-radius: 8px;
-    margin: 4px 8px;
-    background-color: #33415533;
-    color: #cbd5e1;
+    padding: 6px;
+    background-color: transparent;
 }
 
 QListWidget::item:hover {
-    background-color: #33415588;
-    color: #f8fafc;
+    background-color: #dfdfdf;
 }
 
 QListWidget::item:selected {
-    background-color: #0284c7;
+    background-color: #000080; /* Classic Navy Blue */
     color: #ffffff;
-    font-weight: bold;
 }
 
-/* Chat Input Pane */
-QFrame#chat_input_frame {
-    background-color: #1e293b;
-    border-top: 1px solid #334155;
-    padding: 8px;
-}
-
-QTextEdit#message_input {
-    background-color: #0f172a;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    padding: 8px 12px;
-    color: #f8fafc;
-}
-
-QTextEdit#message_input:focus {
-    border: 1px solid #38bdf8;
-}
-
-/* Scroll Area for Messages */
-QScrollArea {
-    border: none;
-    background-color: #0f172a;
-}
-
-QScrollArea > QWidget > QWidget {
-    background-color: #0f172a;
-}
-
-/* Standard Buttons */
+/* Classic Windows 95 Buttons */
 QPushButton {
-    background-color: #0284c7;
-    color: #ffffff;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 16px;
-    font-weight: 600;
+    background-color: #c0c0c0;
+    color: #000000;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff; /* Outset bevel */
+    padding: 4px 12px;
+    min-height: 20px;
+    font-weight: bold;
 }
 
 QPushButton:hover {
-    background-color: #0ea5e9;
+    background-color: #d8d8d8;
 }
 
 QPushButton:pressed {
-    background-color: #0369a1;
+    background-color: #b0b0b0;
+    border-color: #808080 #ffffff #ffffff #808080; /* Inset bevel when clicked */
+    padding-left: 6px;
+    padding-top: 6px;
 }
 
 QPushButton:disabled {
-    background-color: #1e293b;
-    color: #64748b;
-    border: 1px solid #334155;
+    color: #808080;
+    border-color: #ffffff #808080 #808080 #ffffff;
 }
 
-/* Accent Button */
-QPushButton#action_button {
-    background-color: #0d9488;
-}
-
-QPushButton#action_button:hover {
-    background-color: #14b8a6;
-}
-
-QPushButton#action_button:pressed {
-    background-color: #0f766e;
-}
-
-/* Scrollbars */
-QScrollBar:vertical {
-    border: none;
-    background: #0f172a;
-    width: 8px;
-    margin: 0px;
-}
-
-QScrollBar::handle:vertical {
-    background: #334155;
-    min-height: 20px;
-    border-radius: 4px;
-}
-
-QScrollBar::handle:vertical:hover {
-    background: #475569;
-}
-
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    height: 0px;
-}
-
-/* Headers and Labels */
+/* Header Titles */
 QLabel#chat_header_title {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: bold;
-    color: #f8fafc;
+    color: #000080; /* Navy blue title */
 }
 
 QLabel#chat_header_subtitle {
     font-size: 11px;
-    color: #94a3b8;
+    color: #404040;
 }
 
 QLabel#username_label {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: bold;
-    color: #38bdf8;
+    color: #000080;
 }
 
-/* File Transfer Info Panel */
+/* File Transfer Panels */
 QFrame#file_panel {
-    background-color: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 8px;
-    margin: 8px;
-    padding: 12px;
+    background-color: #c0c0c0;
+    border: 2px solid;
+    border-color: #ffffff #808080 #808080 #ffffff;
+    margin: 4px;
+    padding: 8px;
 }
 
 QProgressBar {
-    border: 1px solid #334155;
-    border-radius: 4px;
+    border: 2px solid;
+    border-color: #808080 #ffffff #ffffff #808080;
     text-align: center;
-    background-color: #0f172a;
-    color: #ffffff;
+    background-color: #ffffff;
+    color: #000000;
     font-weight: bold;
 }
 
 QProgressBar::chunk {
-    background-color: #0d9488;
-    border-radius: 3px;
+    background-color: #000080; /* Dark blue progress bar block */
 }
 """
