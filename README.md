@@ -63,6 +63,31 @@ PYTHONPATH=. uv run python -m zeronet.main --name "Bob" --port 54322
 
 ---
 
+## 🎮 How to Operate the App
+
+Once you have multiple instances running on the network:
+
+1. **View Contacts**:
+   - The left sidebar lists all active contacts discovered on your network.
+   - An active contact is prefixed with `[+]` (e.g., `[+] Alice`). If a peer disconnects, their status will update to `[-]`.
+2. **Direct Secure Chat**:
+   - Click a contact in the list. The chat panel will activate and perform an instant, secure E2EE key exchange.
+   - Type your message in the bottom text box and click **Send** or press **Enter**.
+   - Outgoing messages are prefix-wrapped in dark red (`<Me>`) and incoming messages in navy blue (e.g., `<Alice>`).
+3. **Group Chats**:
+   - Click **Create Group** at the bottom of the sidebar.
+   - Enter a name for the group (e.g., "Dev Team").
+   - Tick the checkboxes next to the online contacts you want to add and click **Ok**.
+   - Your messages will be encrypted and broadcast directly to all group members via full-mesh P2P connections.
+4. **File Sharing**:
+   - Select a direct peer's chat window.
+   - Click **📎 File** at the bottom left.
+   - Select a file from your system.
+   - The receiver will immediately see an **Incoming File** panel with **Accept** and **Reject** options.
+   - If they click **Accept**, they will choose a save location, and the file will stream in encrypted blocks with a live progress bar.
+
+---
+
 ## ⚙️ Architecture
 
 ```
