@@ -8,6 +8,7 @@ dependencies = [
     "PyQt6>=6.4.0",
     "zeroconf>=0.131.0",
     "cryptography>=41.0.0",
+    "textual>=0.40.0",
 ]
 
 [dependency-groups]

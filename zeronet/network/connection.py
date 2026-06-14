@@ -4,25 +4,35 @@ import time
 import os
 import traceback
 from typing import Dict, Any, Tuple, Optional
-from PyQt6.QtCore import QThread, pyqtSignal, QObject
 
 from zeronet.crypto.manager import CryptoManager
 from zeronet.network.protocol import Protocol
 
-class NetworkSignals(QObject):
-    # Signaling the main window about network events
-    peer_discovered_signal = pyqtSignal(str, str, str, int)  # peer_id, name, ip, port
-    peer_removed_signal = pyqtSignal(str)                   # peer_id
-    message_received_signal = pyqtSignal(str, str, str, float)  # peer_id, peer_name, text, timestamp
-    group_message_received_signal = pyqtSignal(str, str, str, str, str, float)  # peer_id, peer_name, group_id, group_name, text, timestamp
-    
-    # File transfer signals
-    file_offer_received_signal = pyqtSignal(str, str, str, int, str)  # peer_id, peer_name, file_name, file_size, transfer_id
-    file_offer_accepted_signal = pyqtSignal(str, str, int)           # peer_id, transfer_id, file_port
-    file_offer_rejected_signal = pyqtSignal(str, str)                # peer_id, transfer_id
-    file_progress_signal = pyqtSignal(str, int, int)                 # transfer_id, bytes_transferred, bytes_total
-    file_completed_signal = pyqtSignal(str, str)                     # transfer_id, file_path
-    file_failed_signal = pyqtSignal(str, str)                        # transfer_id, error_msg
+class NetworkCallbacks:
+    """
+    Standard Python callback registry to allow running network components 
+    independently of any GUI (PyQt6) or TUI (Textual) runtime.
+    """
+    def __init__(self):
+        self.peer_discovered = []
+        self.peer_removed = []
+        self.message_received = []
+        self.group_message_received = []
+        self.file_offer_received = []
+        self.file_offer_accepted = []
+        self.file_offer_rejected = []
+        self.file_progress = []
+        self.file_completed = []
+        self.file_failed = []
+
+    def trigger(self, event_name: str, *args):
+        listeners = getattr(self, event_name, [])
+        for listener in listeners:
+            try:
+                listener(*args)
+            except Exception as e:
+                print(f"[Callbacks] Error calling listener for {event_name}: {e}")
+                traceback.print_exc()
 
 
 class PeerConnection:
@@ -47,15 +57,16 @@ class PeerConnection:
             pass
 
 
-class NetworkManager(QThread):
+class NetworkManager(threading.Thread):
     def __init__(self, username: str, device_id: str, default_port: int = 54321):
         super().__init__()
+        self.daemon = True  # Exit cleanly when main thread drops
         self.username = username
         self.device_id = device_id
         self.default_port = default_port
         self.port = default_port
         
-        self.signals = NetworkSignals()
+        self.callbacks = NetworkCallbacks()
         self.crypto = CryptoManager()
         
         # Sockets & Threading Control
@@ -70,7 +81,6 @@ class NetworkManager(QThread):
         self.connections_lock = threading.Lock()
         
         # File transfer registry: transfer_id -> info
-        # Info contains: file_name, file_size, save_path, progress callback, etc.
         self.file_transfers: Dict[str, Dict[str, Any]] = {}
 
     def run(self):
@@ -105,7 +115,6 @@ class NetworkManager(QThread):
                     continue
                 
                 print(f"[NetworkManager] Accepted connection from {addr}")
-                # Start a temporary thread to handle key exchange and establish peer connection
                 t = threading.Thread(target=self._handle_incoming_connection, args=(client_sock, addr))
                 t.daemon = True
                 t.start()
@@ -157,7 +166,6 @@ class NetworkManager(QThread):
             conn = PeerConnection(peer_id, peer_name, client_sock, fernet_key)
             
             with self.connections_lock:
-                # If there's an existing connection, close it first
                 if peer_id in self.connections:
                     self.connections[peer_id].close()
                 self.connections[peer_id] = conn
@@ -170,11 +178,10 @@ class NetworkManager(QThread):
                     "port": addr[1],
                     "status": "online"
                 }
-                self.signals.peer_discovered_signal.emit(peer_id, peer_name, addr[0], addr[1])
+            self.callbacks.trigger("peer_discovered", peer_id, peer_name, addr[0], addr[1])
             
             print(f"[NetworkManager] E2E Encryption established with {peer_name} ({peer_id})")
             
-            # Step 4: Run reader loop
             self._peer_reader_loop(conn)
             
         except Exception as e:
@@ -199,11 +206,12 @@ class NetworkManager(QThread):
                 
                 if msg_type == "TEXT_CHAT":
                     plaintext = self.crypto.decrypt_message(conn.fernet_key, payload)
-                    self.signals.message_received_signal.emit(peer_id, peer_name, plaintext, metadata["timestamp"])
+                    self.callbacks.trigger("message_received", peer_id, peer_name, plaintext, metadata["timestamp"])
                     
                 elif msg_type == "GROUP_TEXT_CHAT":
                     plaintext = self.crypto.decrypt_message(conn.fernet_key, payload)
-                    self.signals.group_message_received_signal.emit(
+                    self.callbacks.trigger(
+                        "group_message_received", 
                         peer_id, 
                         peer_name, 
                         metadata["group_id"], 
@@ -217,42 +225,36 @@ class NetworkManager(QThread):
                     file_name = extra.get("file_name")
                     file_size = extra.get("file_size")
                     transfer_id = extra.get("transfer_id")
-                    self.signals.file_offer_received_signal.emit(peer_id, peer_name, file_name, file_size, transfer_id)
+                    self.callbacks.trigger("file_offer_received", peer_id, peer_name, file_name, file_size, transfer_id)
                     
                 elif msg_type == "FILE_ACCEPT":
                     extra = metadata.get("extra", {})
                     transfer_id = extra.get("transfer_id")
                     file_port = extra.get("file_port")
-                    self.signals.file_offer_accepted_signal.emit(peer_id, transfer_id, file_port)
+                    self.callbacks.trigger("file_offer_accepted", peer_id, transfer_id, file_port)
                     
                 elif msg_type == "FILE_REJECT":
                     extra = metadata.get("extra", {})
                     transfer_id = extra.get("transfer_id")
-                    self.signals.file_offer_rejected_signal.emit(peer_id, transfer_id)
+                    self.callbacks.trigger("file_offer_rejected", peer_id, transfer_id)
                     
                 elif msg_type == "HEARTBEAT":
-                    # Keepalive, status could be checked here
                     pass
                     
             except Exception as e:
                 print(f"[NetworkManager] Connection to {peer_name} dropped: {e}")
                 break
                 
-        # Cleanup connection
         with self.connections_lock:
             if peer_id in self.connections and self.connections[peer_id] is conn:
                 del self.connections[peer_id]
         conn.close()
 
     def get_or_create_connection(self, peer_id: str) -> PeerConnection:
-        """
-        Retrieves active connection to peer, or initiates connection/key exchange.
-        """
         with self.connections_lock:
             if peer_id in self.connections:
                 return self.connections[peer_id]
                 
-        # Need to connect
         peer_info = self.peers.get(peer_id)
         if not peer_info:
             raise ConnectionError(f"Peer {peer_id} not discovered/known")
@@ -266,12 +268,10 @@ class NetworkManager(QThread):
         sock.connect((ip, port))
         
         # Perform Key Exchange
-        # Send our public key
         my_pub_bytes = self.crypto.get_public_bytes()
         exchange_pkt = Protocol.create_key_exchange(self.username, self.device_id, my_pub_bytes)
         sock.sendall(exchange_pkt)
         
-        # Read their public key
         metadata, payload = Protocol.unpack_message(sock)
         if metadata.get("msg_type") != "KEY_EXCHANGE":
             sock.close()
@@ -285,11 +285,10 @@ class NetworkManager(QThread):
         
         with self.connections_lock:
             if peer_id in self.connections:
-                sock.close()  # A race occurred, keep the existing one
+                sock.close()
                 return self.connections[peer_id]
             self.connections[peer_id] = conn
             
-        # Spawn receiver thread for this outbound connection
         t = threading.Thread(target=self._peer_reader_loop, args=(conn,))
         t.daemon = True
         t.start()
@@ -297,19 +296,12 @@ class NetworkManager(QThread):
         return conn
 
     def send_direct_message(self, peer_id: str, message_text: str):
-        """
-        Encrypts and sends a direct text message to peer_id.
-        """
         conn = self.get_or_create_connection(peer_id)
         encrypted_bytes = CryptoManager.encrypt_message(conn.fernet_key, message_text)
         pkt = Protocol.create_text_chat(self.username, self.device_id, encrypted_bytes)
         conn.send(pkt)
 
     def send_group_message(self, group_id: str, group_name: str, member_ids: list, message_text: str):
-        """
-        Sends group text messages using full-mesh P2P: iterates through all online members
-        and sends E2E encrypted messages over direct sockets.
-        """
         for member_id in member_ids:
             if member_id == self.device_id:
                 continue
@@ -322,10 +314,6 @@ class NetworkManager(QThread):
                 print(f"[NetworkManager] Failed to send group message to member {member_id}: {e}")
 
     def offer_file(self, peer_id: str, file_path: str) -> str:
-        """
-        Initiates a file transfer request by sending a FILE_OFFER.
-        Returns the generated transfer_id.
-        """
         if not os.path.exists(file_path):
             raise FileNotFoundError(f"File not found: {file_path}")
             
@@ -348,10 +336,6 @@ class NetworkManager(QThread):
         return transfer_id
 
     def accept_file(self, peer_id: str, transfer_id: str, save_path: str):
-        """
-        Accepts a file transfer. Starts a dedicated TCP server socket on an ephemeral port
-        to receive file chunks. Sends FILE_ACCEPT containing the port.
-        """
         transfer_info = self.file_transfers.get(transfer_id)
         if not transfer_info:
             raise ValueError("Unknown transfer ID")
@@ -359,9 +343,8 @@ class NetworkManager(QThread):
         transfer_info["save_path"] = save_path
         transfer_info["status"] = "accepted"
         
-        # Start the file receiver socket in the background
         file_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        file_sock.bind(('0.0.0.0', 0))  # OS binds to ephemeral port
+        file_sock.bind(('0.0.0.0', 0))
         file_sock.listen(1)
         file_port = file_sock.getsockname()[1]
         
@@ -369,15 +352,11 @@ class NetworkManager(QThread):
         t.daemon = True
         t.start()
         
-        # Reply with acceptance containing the file receiver port
         conn = self.get_or_create_connection(peer_id)
         pkt = Protocol.create_file_accept(self.username, self.device_id, transfer_id, file_port)
         conn.send(pkt)
 
     def reject_file(self, peer_id: str, transfer_id: str):
-        """
-        Rejects a file transfer. Sends FILE_REJECT.
-        """
         if transfer_id in self.file_transfers:
             self.file_transfers[transfer_id]["status"] = "rejected"
             
@@ -386,11 +365,7 @@ class NetworkManager(QThread):
         conn.send(pkt)
 
     def _file_receiver_server(self, file_sock: socket.socket, transfer_id: str, peer_id: str):
-        """
-        Accepts a connection on the ephemeral file receiver port, reads encrypted chunks,
-        decrypts them using the peer's derived Fernet key, and writes them to save_path.
-        """
-        file_sock.settimeout(10.0)  # Wait up to 10s for connection
+        file_sock.settimeout(10.0)
         client_sock = None
         f_write = None
         try:
@@ -399,7 +374,6 @@ class NetworkManager(QThread):
             save_path = info["save_path"]
             file_size = info["file_size"]
             
-            # Fetch derived Fernet key from direct connection
             conn = self.get_or_create_connection(peer_id)
             fernet_key = conn.fernet_key
             
@@ -408,7 +382,6 @@ class NetworkManager(QThread):
             
             client_sock.settimeout(5.0)
             while bytes_received < file_size:
-                # Each chunk is framed using our protocol to support encryption
                 metadata, payload = Protocol.unpack_message(client_sock)
                 if metadata.get("msg_type") != "FILE_CHUNK":
                     raise ValueError("Expected FILE_CHUNK message type")
@@ -417,14 +390,13 @@ class NetworkManager(QThread):
                 f_write.write(decrypted_chunk)
                 bytes_received += len(decrypted_chunk)
                 
-                # Signal progress
-                self.signals.file_progress_signal.emit(transfer_id, bytes_received, file_size)
+                self.callbacks.trigger("file_progress", transfer_id, bytes_received, file_size)
                 
             f_write.close()
             f_write = None
             
             info["status"] = "completed"
-            self.signals.file_completed_signal.emit(transfer_id, save_path)
+            self.callbacks.trigger("file_completed", transfer_id, save_path)
             
         except Exception as e:
             print(f"[NetworkManager] File receiver error: {e}")
@@ -435,29 +407,21 @@ class NetworkManager(QThread):
                 except Exception:
                     pass
                 try:
-                    os.remove(save_path)  # Delete partial file
+                    os.remove(save_path)
                 except Exception:
                     pass
-            self.signals.file_failed_signal.emit(transfer_id, str(e))
+            self.callbacks.trigger("file_failed", transfer_id, str(e))
         finally:
             file_sock.close()
             if client_sock:
                 client_sock.close()
 
     def start_file_upload(self, peer_id: str, transfer_id: str, file_port: int):
-        """
-        Triggered when a peer accepts a file offer. Connects to their file receiver port,
-        and uploads the file in encrypted chunks in a background thread.
-        """
         t = threading.Thread(target=self._file_sender_client, args=(peer_id, transfer_id, file_port))
         t.daemon = True
         t.start()
 
     def _file_sender_client(self, peer_id: str, transfer_id: str, file_port: int):
-        """
-        Connects to peer's file receiver socket, encrypts chunks using E2E Fernet key,
-        and streams them.
-        """
         info = self.file_transfers.get(transfer_id)
         if not info:
             return
@@ -465,10 +429,9 @@ class NetworkManager(QThread):
         file_path = info["file_path"]
         file_size = info["file_size"]
         
-        # Get host IP of peer
         peer_info = self.peers.get(peer_id)
         if not peer_info:
-            self.signals.file_failed_signal.emit(transfer_id, "Peer went offline")
+            self.callbacks.trigger("file_failed", transfer_id, "Peer went offline")
             return
             
         peer_ip = peer_info["ip"]
@@ -478,12 +441,11 @@ class NetworkManager(QThread):
         try:
             sock.connect((peer_ip, file_port))
             
-            # Fetch derived Fernet key
             conn = self.get_or_create_connection(peer_id)
             fernet_key = conn.fernet_key
             
             bytes_sent = 0
-            chunk_size = 64 * 1024  # 64 KB chunks
+            chunk_size = 64 * 1024
             
             sock.settimeout(5.0)
             with open(file_path, "rb") as f_read:
@@ -494,22 +456,20 @@ class NetworkManager(QThread):
                         
                     encrypted_chunk = CryptoManager.encrypt_data(fernet_key, chunk)
                     
-                    # Wrap inside a protocol message
                     metadata = {"msg_type": "FILE_CHUNK", "timestamp": time.time()}
                     pkt = Protocol.pack_message(metadata, encrypted_chunk)
                     
                     sock.sendall(pkt)
                     bytes_sent += len(chunk)
                     
-                    # Signal progress
-                    self.signals.file_progress_signal.emit(transfer_id, bytes_sent, file_size)
+                    self.callbacks.trigger("file_progress", transfer_id, bytes_sent, file_size)
                     
             info["status"] = "completed"
-            self.signals.file_completed_signal.emit(transfer_id, file_path)
+            self.callbacks.trigger("file_completed", transfer_id, file_path)
             
         except Exception as e:
             print(f"[NetworkManager] File sender error: {e}")
             traceback.print_exc()
-            self.signals.file_failed_signal.emit(transfer_id, str(e))
+            self.callbacks.trigger("file_failed", transfer_id, str(e))
         finally:
             sock.close()

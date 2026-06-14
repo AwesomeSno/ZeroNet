@@ -42,21 +42,27 @@ cd ZeroNet
 uv sync
 ```
 
-### 2. Running the Application
-Launch the main application instance:
+### 2. Running the GUI Application (PyQt6 Retro Theme)
+Launch the GUI chat client:
 ```bash
 PYTHONPATH=. uv run python -m zeronet.main
 ```
 
-### 3. Local Multi-Device Testing
-You can easily simulate multiple devices on your machine by starting another node with a different name and TCP port:
-
-**Node A (Alice):**
+### 3. Running the TUI Application (Textual Terminal GUI)
+Launch the TUI chat client in your terminal:
 ```bash
-PYTHONPATH=. uv run python -m zeronet.main --name "Alice" --port 54321
+PYTHONPATH=. uv run python -m zeronet.tui
 ```
 
-**Node B (Bob):**
+### 4. Local Multi-Device Testing
+You can easily simulate multiple devices on your machine by starting another node with a different name and TCP port (using either GUI or TUI):
+
+**Node A (Alice in TUI):**
+```bash
+PYTHONPATH=. uv run python -m zeronet.tui --name "Alice" --port 54321
+```
+
+**Node B (Bob in GUI):**
 ```bash
 PYTHONPATH=. uv run python -m zeronet.main --name "Bob" --port 54322
 ```
@@ -85,6 +91,14 @@ Once you have multiple instances running on the network:
    - Select a file from your system.
    - The receiver will immediately see an **Incoming File** panel with **Accept** and **Reject** options.
    - If they click **Accept**, they will choose a save location, and the file will stream in encrypted blocks with a live progress bar.
+
+### 📟 Operating in TUI Mode:
+- **View Contacts**: Discovered peers will automatically show up on the left sidebar as `[+] Name`. Select them using your mouse or arrow keys.
+- **Messaging**: Select a contact, type your message in the bottom input, and press **Enter**.
+- **Group Chat**: Type `/group create <group_name> <peer_name_1> <peer_name_2> ...` to create a group. It will immediately appear on your sidebar list.
+- **File Attachment**: Select a contact, type `/file <path_to_file>` to offer a file.
+- **Accept/Reject File**: When you receive a file offer notification in the chat log, type `/accept` to download the file directly to your current directory (as `downloaded_<filename>`), or `/reject` to decline.
+- **Quit TUI**: Press `q` to exit.
 
 ---
 

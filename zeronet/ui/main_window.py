@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
                              QListWidget, QListWidgetItem, QLineEdit, QPushButton, 
                              QLabel, QTextBrowser, QFrame, QFileDialog, QDialog, 
                              QCheckBox, QDialogButtonBox, QMessageBox)
-from PyQt6.QtCore import Qt, pyqtSlot
+from PyQt6.QtCore import Qt, pyqtSlot, pyqtSignal, QObject
 
 from zeronet.ui.styles import MAIN_STYLE
 from zeronet.ui.widgets import PeerListItemWidget, FileTransferWidget
@@ -52,11 +52,42 @@ class GroupCreationDialog(QDialog):
         return group_name, selected_members
 
 
+class PyQtNetworkAdapter(QObject):
+    peer_discovered_signal = pyqtSignal(str, str, str, int)
+    peer_removed_signal = pyqtSignal(str)
+    message_received_signal = pyqtSignal(str, str, str, float)
+    group_message_received_signal = pyqtSignal(str, str, str, str, str, float)
+    
+    file_offer_received_signal = pyqtSignal(str, str, str, int, str)
+    file_offer_accepted_signal = pyqtSignal(str, str, int)
+    file_offer_rejected_signal = pyqtSignal(str, str)
+    file_progress_signal = pyqtSignal(str, int, int)
+    file_completed_signal = pyqtSignal(str, str)
+    file_failed_signal = pyqtSignal(str, str)
+
+    def __init__(self, manager):
+        super().__init__()
+        self.manager = manager
+        
+        # Attach listeners
+        self.manager.callbacks.peer_discovered.append(self.peer_discovered_signal.emit)
+        self.manager.callbacks.peer_removed.append(self.peer_removed_signal.emit)
+        self.manager.callbacks.message_received.append(self.message_received_signal.emit)
+        self.manager.callbacks.group_message_received.append(self.group_message_received_signal.emit)
+        self.manager.callbacks.file_offer_received.append(self.file_offer_received_signal.emit)
+        self.manager.callbacks.file_offer_accepted.append(self.file_offer_accepted_signal.emit)
+        self.manager.callbacks.file_offer_rejected.append(self.file_offer_rejected_signal.emit)
+        self.manager.callbacks.file_progress.append(self.file_progress_signal.emit)
+        self.manager.callbacks.file_completed.append(self.file_completed_signal.emit)
+        self.manager.callbacks.file_failed.append(self.file_failed_signal.emit)
+
+
 class MainWindow(QMainWindow):
     def __init__(self, network_manager, discovery_service):
         super().__init__()
         self.network_manager = network_manager
         self.discovery_service = discovery_service
+        self.adapter = PyQtNetworkAdapter(self.network_manager)
         
         self.setWindowTitle("ZeroNet Messenger - [mIRC/ICQ Retro Edition]")
         self.setMinimumSize(780, 520)
@@ -182,7 +213,7 @@ class MainWindow(QMainWindow):
         self.chat_log.append("<font color='#000080'>*** Discovered nodes on your network will appear in the sidebar.</font>")
 
     def connect_signals(self):
-        ns = self.network_manager.signals
+        ns = self.adapter
         ns.peer_discovered_signal.connect(self.on_peer_discovered)
         ns.peer_removed_signal.connect(self.on_peer_removed)
         ns.message_received_signal.connect(self.on_message_received)
