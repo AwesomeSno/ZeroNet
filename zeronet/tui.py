@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 import argparse
 import socket
@@ -21,8 +22,8 @@ Screen {
 }
 
 #main-container {
-    width: 95%;
-    height: 95%;
+    width: 100%;
+    height: 100%;
     background: #c0c0c0; /* Gray retro surface */
     border: double #ffffff;
     color: #000000;
@@ -54,7 +55,7 @@ Screen {
 #contacts-list {
     background: #ffffff;
     border: tall #808080;
-    height: 70%;
+    height: 1fr; /* Fill remaining space dynamically */
     color: #000000;
 }
 
@@ -77,6 +78,7 @@ Screen {
     height: 100%;
     background: #c0c0c0;
     padding: 1;
+    layout: vertical;
 }
 
 #chat-header {
@@ -93,13 +95,12 @@ Screen {
 
 #chat-subtitle {
     color: #404040;
-    font-size: 10;
 }
 
 #chat-log {
     background: #ffffff;
     border: tall #808080;
-    height: 75%;
+    height: 1fr; /* Fill remaining space dynamically so input is never pushed off-screen */
 }
 
 #chat-input-bar {
@@ -183,15 +184,21 @@ class ZeroNetTUI(App):
         # Start networking
         self.network_manager.start()
         
-        # Wait a fraction for port binding, then start discovery
-        time.sleep(0.1)
-        self.discovery_service.start()
+        # Start discovery service in a separate thread so it doesn't block Textual's event loop
+        def run_discovery():
+            time.sleep(0.2)
+            self.discovery_service.start()
+        
+        t = threading.Thread(target=run_discovery)
+        t.daemon = True
+        t.start()
         
         self.log_to_chat("[cyan]*** Welcome to ZeroNet TUI Messenger! ***[/]")
         self.log_to_chat("[cyan]*** Monospaced secure local P2P networking started ***[/]")
         
         # Refresh the sidebar initially
         self.refresh_sidebar()
+        self.query_one("#message-input").focus()
 
     def log_to_chat(self, msg: str, target: str = None):
         """
@@ -272,6 +279,7 @@ class ZeroNetTUI(App):
             
         input_widget = self.query_one("#message-input", Input)
         input_widget.value = ""
+        input_widget.focus()
         
         # Handle slash commands
         if text.startswith("/"):
