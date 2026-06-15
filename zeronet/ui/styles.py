@@ -2,6 +2,7 @@
 # Implements a Windows 95 / ICQ retro theme with classic teal background,
 # gray window borders, beveled buttons, and monospace fonts.
 
+from zeronet.ui import main_window
 MAIN_STYLE = """
 /* General Application Styles */
 QMainWindow {

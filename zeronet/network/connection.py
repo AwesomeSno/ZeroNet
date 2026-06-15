@@ -58,6 +58,10 @@ class PeerConnection:
 
 
 class NetworkManager(threading.Thread):
+    HEARTBEAT_INTERVAL = 30  # seconds between heartbeats
+    CONNECTION_TIMEOUT = 10  # seconds for connect/handshake timeout
+    MAX_RETRY_ATTEMPTS = 3
+
     def __init__(self, username: str, device_id: str, default_port: int = 54321):
         super().__init__()
         self.daemon = True  # Exit cleanly when main thread drops
@@ -75,6 +79,7 @@ class NetworkManager(threading.Thread):
         
         # Peer Registry: peer_id -> { "name": name, "ip": ip, "port": port, "status": "online" }
         self.peers: Dict[str, Dict[str, Any]] = {}
+        self.peers_lock = threading.Lock()
         
         # Active Connections: peer_id -> PeerConnection
         self.connections: Dict[str, PeerConnection] = {}
@@ -82,6 +87,9 @@ class NetworkManager(threading.Thread):
         
         # File transfer registry: transfer_id -> info
         self.file_transfers: Dict[str, Dict[str, Any]] = {}
+        
+        # Heartbeat thread
+        self._heartbeat_thread: Optional[threading.Thread] = None
 
     def run(self):
         """
@@ -106,6 +114,10 @@ class NetworkManager(threading.Thread):
                     print("[NetworkManager] No ports available!")
                     return
         
+        # Start heartbeat thread
+        self._heartbeat_thread = threading.Thread(target=self._heartbeat_loop, daemon=True)
+        self._heartbeat_thread.start()
+        
         while self.running:
             try:
                 self.server_socket.settimeout(1.0)
@@ -115,8 +127,7 @@ class NetworkManager(threading.Thread):
                     continue
                 
                 print(f"[NetworkManager] Accepted connection from {addr}")
-                t = threading.Thread(target=self._handle_incoming_connection, args=(client_sock, addr))
-                t.daemon = True
+                t = threading.Thread(target=self._handle_incoming_connection, args=(client_sock, addr), daemon=True)
                 t.start()
             except Exception as e:
                 if self.running:
@@ -136,12 +147,41 @@ class NetworkManager(threading.Thread):
                 conn.close()
             self.connections.clear()
 
+    def _heartbeat_loop(self):
+        """
+        Periodically sends heartbeat packets to all connected peers.
+        Detects dead connections and cleans them up.
+        """
+        while self.running:
+            time.sleep(self.HEARTBEAT_INTERVAL)
+            if not self.running:
+                break
+            
+            with self.connections_lock:
+                conn_list = list(self.connections.items())
+            
+            for peer_id, conn in conn_list:
+                try:
+                    hb_pkt = Protocol.create_heartbeat(self.username, self.device_id)
+                    conn.send(hb_pkt)
+                except Exception as e:
+                    print(f"[NetworkManager] Heartbeat failed for {conn.peer_name}: {e}")
+                    # Connection is dead, clean up
+                    with self.connections_lock:
+                        if peer_id in self.connections and self.connections[peer_id] is conn:
+                            del self.connections[peer_id]
+                    conn.close()
+                    with self.peers_lock:
+                        if peer_id in self.peers:
+                            self.peers[peer_id]["status"] = "offline"
+                    self.callbacks.trigger("peer_removed", peer_id)
+
     def _handle_incoming_connection(self, client_sock: socket.socket, addr: Tuple[str, int]):
         """
         Handles key exchange for incoming connections and starts the message reader loop.
         """
         try:
-            client_sock.settimeout(5.0)
+            client_sock.settimeout(self.CONNECTION_TIMEOUT)
             
             # Step 1: Read their KEY_EXCHANGE packet
             metadata, payload = Protocol.unpack_message(client_sock)
@@ -171,13 +211,16 @@ class NetworkManager(threading.Thread):
                 self.connections[peer_id] = conn
             
             # Update/Verify they are in our peers list
-            if peer_id not in self.peers:
-                self.peers[peer_id] = {
-                    "name": peer_name,
-                    "ip": addr[0],
-                    "port": addr[1],
-                    "status": "online"
-                }
+            with self.peers_lock:
+                if peer_id not in self.peers:
+                    self.peers[peer_id] = {
+                        "name": peer_name,
+                        "ip": addr[0],
+                        "port": addr[1],
+                        "status": "online"
+                    }
+                else:
+                    self.peers[peer_id]["status"] = "online"
             self.callbacks.trigger("peer_discovered", peer_id, peer_name, addr[0], addr[1])
             
             print(f"[NetworkManager] E2E Encryption established with {peer_name} ({peer_id})")
@@ -225,6 +268,13 @@ class NetworkManager(threading.Thread):
                     file_name = extra.get("file_name")
                     file_size = extra.get("file_size")
                     transfer_id = extra.get("transfer_id")
+                    self.file_transfers[transfer_id] = {
+                        "role": "receiver",
+                        "peer_id": peer_id,
+                        "file_name": file_name,
+                        "file_size": file_size,
+                        "status": "offered"
+                    }
                     self.callbacks.trigger("file_offer_received", peer_id, peer_name, file_name, file_size, transfer_id)
                     
                 elif msg_type == "FILE_ACCEPT":
@@ -249,13 +299,20 @@ class NetworkManager(threading.Thread):
             if peer_id in self.connections and self.connections[peer_id] is conn:
                 del self.connections[peer_id]
         conn.close()
+        
+        # Mark peer as offline if connection dropped
+        with self.peers_lock:
+            if peer_id in self.peers:
+                self.peers[peer_id]["status"] = "offline"
+        self.callbacks.trigger("peer_removed", peer_id)
 
     def get_or_create_connection(self, peer_id: str) -> PeerConnection:
         with self.connections_lock:
             if peer_id in self.connections:
                 return self.connections[peer_id]
-                
-        peer_info = self.peers.get(peer_id)
+        
+        with self.peers_lock:
+            peer_info = self.peers.get(peer_id)
         if not peer_info:
             raise ConnectionError(f"Peer {peer_id} not discovered/known")
             
@@ -263,37 +320,58 @@ class NetworkManager(threading.Thread):
         port = peer_info["port"]
         peer_name = peer_info["name"]
         
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.settimeout(5.0)
-        sock.connect((ip, port))
+        # Retry connection with backoff
+        last_error = None
+        for attempt in range(self.MAX_RETRY_ATTEMPTS):
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(self.CONNECTION_TIMEOUT)
+                sock.connect((ip, port))
+                
+                # Perform Key Exchange
+                my_pub_bytes = self.crypto.get_public_bytes()
+                exchange_pkt = Protocol.create_key_exchange(self.username, self.device_id, my_pub_bytes)
+                sock.sendall(exchange_pkt)
+                
+                metadata, payload = Protocol.unpack_message(sock)
+                if metadata.get("msg_type") != "KEY_EXCHANGE":
+                    sock.close()
+                    raise ConnectionError("Key exchange failed: expected public key in response")
+                    
+                peer_pub_bytes = payload
+                fernet_key = self.crypto.derive_shared_fernet_key(peer_pub_bytes)
+                
+                sock.settimeout(None)
+                conn = PeerConnection(peer_id, peer_name, sock, fernet_key)
+                
+                with self.connections_lock:
+                    if peer_id in self.connections:
+                        sock.close()
+                        return self.connections[peer_id]
+                    self.connections[peer_id] = conn
+                
+                # Mark peer as online
+                with self.peers_lock:
+                    if peer_id in self.peers:
+                        self.peers[peer_id]["status"] = "online"
+                
+                t = threading.Thread(target=self._peer_reader_loop, args=(conn,), daemon=True)
+                t.start()
+                
+                return conn
+                
+            except Exception as e:
+                last_error = e
+                if attempt < self.MAX_RETRY_ATTEMPTS - 1:
+                    backoff = (attempt + 1) * 0.5
+                    print(f"[NetworkManager] Connection attempt {attempt + 1} to {peer_name} failed, retrying in {backoff}s...")
+                    time.sleep(backoff)
+                try:
+                    sock.close()
+                except Exception:
+                    pass
         
-        # Perform Key Exchange
-        my_pub_bytes = self.crypto.get_public_bytes()
-        exchange_pkt = Protocol.create_key_exchange(self.username, self.device_id, my_pub_bytes)
-        sock.sendall(exchange_pkt)
-        
-        metadata, payload = Protocol.unpack_message(sock)
-        if metadata.get("msg_type") != "KEY_EXCHANGE":
-            sock.close()
-            raise ConnectionError("Key exchange failed: expected public key in response")
-            
-        peer_pub_bytes = payload
-        fernet_key = self.crypto.derive_shared_fernet_key(peer_pub_bytes)
-        
-        sock.settimeout(None)
-        conn = PeerConnection(peer_id, peer_name, sock, fernet_key)
-        
-        with self.connections_lock:
-            if peer_id in self.connections:
-                sock.close()
-                return self.connections[peer_id]
-            self.connections[peer_id] = conn
-            
-        t = threading.Thread(target=self._peer_reader_loop, args=(conn,))
-        t.daemon = True
-        t.start()
-        
-        return conn
+        raise ConnectionError(f"Failed to connect to {peer_name} after {self.MAX_RETRY_ATTEMPTS} attempts: {last_error}")
 
     def send_direct_message(self, peer_id: str, message_text: str):
         conn = self.get_or_create_connection(peer_id)

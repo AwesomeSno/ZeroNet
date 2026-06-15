@@ -56,16 +56,17 @@ class ZeroNetListener(ServiceListener):
         
         print(f"[Discovery] Discovered peer: {peer_username} ({peer_id}) at {ip}:{port}")
         
-        # Update NetworkManager's peer registry
-        self.manager.peers[peer_id] = {
-            "name": peer_username,
-            "ip": ip,
-            "port": port,
-            "status": "online"
-        }
+        # Update NetworkManager's peer registry (thread-safe)
+        with self.manager.peers_lock:
+            self.manager.peers[peer_id] = {
+                "name": peer_username,
+                "ip": ip,
+                "port": port,
+                "status": "online"
+            }
         
-        # Emit signal to GUI
-        self.manager.signals.peer_discovered_signal.emit(peer_id, peer_username, ip, port)
+        # Emit callback to TUI/GUI
+        self.manager.callbacks.trigger("peer_discovered", peer_id, peer_username, ip, port)
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         # Service name is usually "{device_id}._zeronet._tcp.local."
@@ -81,12 +82,13 @@ class ZeroNetListener(ServiceListener):
             
         print(f"[Discovery] Removed peer: {peer_id}")
         
-        # Update status or remove
-        if peer_id in self.manager.peers:
-            self.manager.peers[peer_id]["status"] = "offline"
+        # Update status or remove (thread-safe)
+        with self.manager.peers_lock:
+            if peer_id in self.manager.peers:
+                self.manager.peers[peer_id]["status"] = "offline"
             
-        # Emit signal to GUI
-        self.manager.signals.peer_removed_signal.emit(peer_id)
+        # Emit callback to TUI/GUI
+        self.manager.callbacks.trigger("peer_removed", peer_id)
 
 
 class DiscoveryService:

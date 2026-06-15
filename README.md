@@ -1,136 +1,253 @@
 # 🌐 ZeroNet Messenger
+
 > A serverless, peer-to-peer, end-to-end encrypted LAN messaging & file-sharing application.
 
 ---
 
-ZeroNet Messenger enables direct, secure communication between devices on a local area network (LAN) without relying on external servers, third-party databases, or cloud brokers. It combines modern UI aesthetics with military-grade end-to-end encryption.
+ZeroNet Messenger enables direct, secure communication between devices on a local area network (LAN) without relying on external servers, third-party databases, or cloud brokers.
 
 ## ✨ Features
 
-- **📡 Zero-Configuration Discovery (mDNS)**: Automatically detects and connects with nearby ZeroNet nodes on your Wi-Fi or Ethernet network using Zeroconf/mDNS protocols. No IP addresses to manually configure.
-- **🔒 True End-to-End Encryption (E2EE)**:
-  - Direct peer connections perform automatic **ECDH (secp256r1)** key exchanges.
-  - Generates secure session keys via **HKDF (HMAC-SHA256)** key derivation.
-  - Encrypts all payloads (text, metadata, file streams) using symmetric **Fernet** cryptography.
-- **💬 Real-Time P2P Chat**: Direct text messaging using persistent, threaded TCP sockets.
-- **👥 Full-Mesh Group Chats**: Secure group conversations. Messages are securely mapped and transmitted directly to each online group member via individual E2EE peer sockets.
-- **📁 Secure File Streaming**: Share documents, images, and folders. Large files are streamed in encrypted chunks on separate ephemeral ports, keeping the primary chat thread responsive and offering live transfer progress bars.
-- **🎨 Glassmorphic Dark UI**: Custom-designed dark theme constructed using PyQt6 with clean, modern components, typography, and hover animations.
+- **📡 Zero-Configuration Discovery**: Automatically finds nearby ZeroNet devices using mDNS — no IP addresses to configure
+- **🔒 End-to-End Encryption**: ECDH key exchange + Fernet symmetric encryption — no one can read your messages
+- **💬 Real-Time Chat**: Direct P2P messaging over persistent TCP connections
+- **👥 Group Chats**: Full-mesh group conversations where each message is individually encrypted per member
+- **📁 File Sharing**: Stream files of any size with live progress bars, encrypted in transit
+- **🖥️ Terminal UI**: Beautiful GitHub Dark-themed TUI built with Textual
 
 ---
 
-## 🛠️ Technology Stack
-
-- **Core Engine**: Python 3.10+
-- **Graphical Interface**: PyQt6 (Qt Widgets)
-- **Local Service Discovery**: Zeroconf / mDNS
-- **Network Protocol**: Custom-framed TCP Sockets
-- **Security & Crypto**: `cryptography` (ECDH, HKDF, Fernet)
-
----
-
-## 🚀 Getting Started
+## 🚀 Installation
 
 ### Prerequisites
-Make sure you have [Python 3](https://www.python.org/) and [uv](https://github.com/astral-sh/uv) (or `pip`) installed on your system.
+- [Python 3.10+](https://www.python.org/)
+- [uv](https://github.com/astral-sh/uv) (Python package manager)
 
-### 1. Installation
-Clone the repository and sync the dependencies inside a virtual environment using `uv`:
+### Setup
 ```bash
 git clone git@github.com:AwesomeSno/ZeroNet.git
 cd ZeroNet
 uv sync
 ```
 
-### 2. Running the GUI Application (PyQt6 Retro Theme)
-Launch the GUI chat client:
-```bash
-PYTHONPATH=. uv run python -m zeronet.main
-```
+---
 
-### 3. Running the TUI Application (Textual Terminal GUI)
-Launch the TUI chat client in your terminal:
+## 🖥️ How to Launch
+
+### Start the TUI (Terminal Interface)
 ```bash
 PYTHONPATH=. uv run python -m zeronet.tui
 ```
 
-### 4. Local Multi-Device Testing
-You can easily simulate multiple devices on your machine by starting another node with a different name and TCP port (using either GUI or TUI):
-
-**Node A (Alice in TUI):**
+### Start with a Custom Name
 ```bash
-PYTHONPATH=. uv run python -m zeronet.tui --name "Alice" --port 54321
+PYTHONPATH=. uv run python -m zeronet.tui --name "Alice"
 ```
 
-**Node B (Bob in GUI):**
+### Start on a Custom Port (for running multiple instances)
 ```bash
-PYTHONPATH=. uv run python -m zeronet.main --name "Bob" --port 54322
+PYTHONPATH=. uv run python -m zeronet.tui --name "Bob" --port 54322
+```
+
+### Start the GUI (PyQt6 — alternative)
+```bash
+PYTHONPATH=. uv run python -m zeronet.main
 ```
 
 ---
 
-## 🎮 How to Operate the App
+## 📖 How to Use ZeroNet (Step-by-Step Guide)
 
-Once you have multiple instances running on the network:
+When you launch ZeroNet, you'll see a terminal interface with three areas:
 
-1. **View Contacts**:
-   - The left sidebar lists all active contacts discovered on your network.
-   - An active contact is prefixed with `[+]` (e.g., `[+] Alice`). If a peer disconnects, their status will update to `[-]`.
-2. **Direct Secure Chat**:
-   - Click a contact in the list. The chat panel will activate and perform an instant, secure E2EE key exchange.
-   - Type your message in the bottom text box and click **Send** or press **Enter**.
-   - Outgoing messages are prefix-wrapped in dark red (`<Me>`) and incoming messages in navy blue (e.g., `<Alice>`).
-3. **Group Chats**:
-   - Click **Create Group** at the bottom of the sidebar.
-   - Enter a name for the group (e.g., "Dev Team").
-   - Tick the checkboxes next to the online contacts you want to add and click **Ok**.
-   - Your messages will be encrypted and broadcast directly to all group members via full-mesh P2P connections.
-4. **File Sharing**:
-   - Select a direct peer's chat window.
-   - Click **📎 File** at the bottom left.
-   - Select a file from your system.
-   - The receiver will immediately see an **Incoming File** panel with **Accept** and **Reject** options.
-   - If they click **Accept**, they will choose a save location, and the file will stream in encrypted blocks with a live progress bar.
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ ◆ ZeroNet                                    ● Online │ 192.168… │  ← Title Bar
+├──────────────┬───────────────────────────────────────────────────┤
+│              │                                                   │
+│  LEFT        │  CHAT LOG                                         │
+│  SIDEBAR     │  (messages appear here)                           │
+│              │                                                   │
+│  (peers &    │                                                   │
+│   groups     │                                                   │
+│   appear     │                                                   │
+│   here)      │                                                   │
+│              ├═══════════════════════════════════════════════════╡
+│              │ ▸ TYPE HERE: [ type your message here...       ]  │  ← INPUT BAR
+├──────────────┴───────────────────────────────────────────────────┤
+│ 192.168.1.5:54321 │ 🔒 E2EE │ 1↑ 0↓ │ 💡 Tip…                  │  ← Status Bar
+└──────────────────────────────────────────────────────────────────┘
+```
 
-### 📟 Operating in TUI Mode:
-- **View Contacts**: Discovered peers will automatically show up on the left sidebar as `[+] Name`. Select them using your mouse or arrow keys.
-- **Messaging**: Select a contact, type your message in the bottom input, and press **Enter**.
-- **Group Chat**: Type `/group create <group_name> <peer_name_1> <peer_name_2> ...` to create a group. It will immediately appear on your sidebar list.
-- **File Attachment**: Select a contact, type `/file <path_to_file>` to offer a file.
-- **Accept/Reject File**: When you receive a file offer notification in the chat log, type `/accept` to download the file directly to your current directory (as `downloaded_<filename>`), or `/reject` to decline.
-- **Quit TUI**: Press `q` to exit.
+### Step 1: Wait for Peers
+
+When you start ZeroNet, it automatically scans your local network using mDNS. Any other device running ZeroNet on the same Wi-Fi/Ethernet will appear in the **left sidebar** within a few seconds.
+
+**To test locally**, open a second terminal and start another instance:
+```bash
+PYTHONPATH=. uv run python -m zeronet.tui --name "Bob" --port 54322
+```
+
+### Step 2: Select a Peer
+
+**Click** on a peer name in the left sidebar (or use arrow keys + Enter). This opens their chat and automatically performs a secure key exchange.
+
+The chat header will update to show:
+- Peer name and online status
+- Their IP address
+- Encryption badge (🔒 ECDH + Fernet)
+
+### Step 3: Type and Send a Message
+
+1. Look for the **green-bordered input bar** at the very bottom of the screen. It says `▸ TYPE HERE:`.
+2. **Click** in it (or press `Escape` to focus it)
+3. **Type** your message
+4. Press **Enter** to send
+
+Your messages appear as `You ▸ hello` and incoming messages appear as `PeerName ▸ hey there`.
+
+### Step 4: Send a File
+
+While chatting with a peer, type a `/file` command in the input bar:
+
+```
+/file ~/Documents/photo.jpg
+```
+
+The peer will see a file offer card and can accept or reject it.
+
+### Step 5: Create a Group Chat
+
+```
+/group create devteam alice bob
+```
+
+This creates a group called "devteam" with peers named "alice" and "bob". Peer names are matched case-insensitively. The group appears in your sidebar.
+
+---
+
+## 📟 All Commands
+
+Type these in the **input bar** at the bottom of the screen:
+
+### General
+| Command | What it does | Example |
+|---------|-------------|---------|
+| `/help` | Show all commands and shortcuts | `/help` |
+| `/peers` | List all discovered devices | `/peers` |
+| `/status` | Show session stats (uptime, messages, encryption) | `/status` |
+| `/whoami` | Show your identity and network address | `/whoami` |
+| `/ping` | Check if a specific peer is reachable | `/ping alice` |
+| `/clear` | Clear the current chat window | `/clear` |
+
+### Messaging & Groups
+| Command | What it does | Example |
+|---------|-------------|---------|
+| *(just type)* | Send a message to selected peer | `hello there!` |
+| `/group create` | Create a group chat | `/group create team alice bob` |
+
+### File Transfer
+| Command | What it does | Example |
+|---------|-------------|---------|
+| `/file` | Send a file to the current peer | `/file ~/photo.jpg` |
+| `/accept` | Accept an incoming file offer | `/accept` |
+| `/reject` | Decline an incoming file offer | `/reject` |
+
+> **Note:** `~/` is expanded to your home directory. You can only send files, not directories.
+
+---
+
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| **Ctrl+Q** | Quit ZeroNet |
+| **Ctrl+H** | Show help |
+| **Ctrl+G** | Show group creation help |
+| **Ctrl+P** | List discovered peers |
+| **Ctrl+L** | Clear chat |
+| **Tab** | Toggle focus between sidebar and input bar |
+| **Escape** | Focus the input bar |
+| **Enter** | Send message / run command |
+
+---
+
+## 🔒 How Encryption Works
+
+1. When you connect to a peer, both devices generate **ephemeral ECDH key pairs** (secp256r1)
+2. Public keys are exchanged over the network
+3. Both sides independently derive a **shared secret** using ECDH
+4. The shared secret is passed through **HKDF (HMAC-SHA256)** to derive a symmetric Fernet key
+5. All messages and files are encrypted/decrypted using **Fernet symmetric encryption**
+6. Raw ECDH keys are discarded after the session key is derived
+
+**No encryption keys are ever transmitted in plaintext.** An attacker sniffing your network only sees ciphertext.
 
 ---
 
 ## ⚙️ Architecture
 
 ```
-         +--------------------------------------------+
-         |                PyQt6 UI                    |
-         +--------------------+-----------------------+
-                              | (Qt Signals)
-                              v
-         +--------------------+-----------------------+
-         |            Network Manager                 |
-         +------+--------------------+-------------+--+
-                |                    |             |
-                v                    v             v
-       +-----------------+   +---------------+ +---------------+
-       | Discovery       |   | TCP Listener  | | Key Exchange  |
-       | (Zeroconf/mDNS) |   | (Port: 54321) | | (ECDH & HKDF) |
-       +-----------------+   +---------------+ +---------------+
+         ┌────────────────────────────────────────────┐
+         │          Textual TUI / PyQt6 GUI           │
+         └────────────────┬───────────────────────────┘
+                          │  (Callbacks / Qt Signals)
+                          ▼
+         ┌────────────────┴───────────────────────────┐
+         │            Network Manager                 │
+         ├──────┬──────────────────┬──────────────────┤
+         │      │                  │                  │
+         ▼      ▼                  ▼                  ▼
+    ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────┐
+    │Discovery│ │TCP Listen│ │Heartbeat │ │Key Exchange  │
+    │(mDNS)   │ │(port)    │ │(30s)     │ │(ECDH + HKDF) │
+    └─────────┘ └──────────┘ └──────────┘ └──────────────┘
 ```
 
-- **Discovery Layer**: ZeroNet broadcasts its active port and username on `_zeronet._tcp.local.`.
-- **E2EE Key Exchange**: When Alice connects to Bob, both exchange their ephemeral public keys. They independently compute the shared secret, derive the Fernet key, and then discard the raw ECDH keys.
-- **Payload Framing**:
-  `[4-byte metadata length] [4-byte payload length] [JSON Metadata] [Encrypted Payload bytes]`
+- **mDNS Discovery**: Broadcasts `_zeronet._tcp.local.` on the network
+- **Heartbeat**: Every 30 seconds, dead connections are detected and cleaned up
+- **Connection Retry**: Failed connections are retried 3 times with exponential backoff
+- **Payload Framing**: `[4B metadata length][4B payload length][JSON metadata][encrypted payload]`
 
 ---
 
-## 🧪 Running Unit Tests
+## 🧑‍💻 Testing on One Machine
 
-To run the unit test suite covering key exchanges, encryption, and socket protocols:
+To simulate two users chatting, open **two terminal windows**:
+
+**Terminal 1:**
 ```bash
-PYTHONPATH=. uv run pytest
+cd ZeroNet
+PYTHONPATH=. uv run python -m zeronet.tui --name "Alice" --port 54321
 ```
+
+**Terminal 2:**
+```bash
+cd ZeroNet
+PYTHONPATH=. uv run python -m zeronet.tui --name "Bob" --port 54322
+```
+
+Within seconds, "Alice" will appear in Bob's sidebar and vice versa. Click the peer name and start chatting!
+
+---
+
+## 🧪 Running Tests
+
+```bash
+PYTHONPATH=. uv run pytest -v
+```
+
+---
+
+## 🛠️ Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Language | Python 3.10+ |
+| TUI Framework | Textual |
+| GUI Framework | PyQt6 |
+| Discovery | Zeroconf (mDNS) |
+| Network | TCP Sockets (custom framing) |
+| Encryption | ECDH (secp256r1) + HKDF + Fernet |
+| Package Manager | uv |
+

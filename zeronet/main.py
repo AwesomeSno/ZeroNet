@@ -1,7 +1,15 @@
 import sys
+import os
 import argparse
 import socket
 import uuid
+
+# Fix Qt platform plugin path on macOS (venv installs)
+import PyQt6
+_qt_plugins = os.path.join(os.path.dirname(PyQt6.__file__), "Qt6", "plugins")
+if os.path.isdir(_qt_plugins):
+    os.environ.setdefault("QT_PLUGIN_PATH", _qt_plugins)
+
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import Qt
 
