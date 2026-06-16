@@ -5,6 +5,13 @@ import argparse
 import socket
 import uuid
 import sys
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="[%(name)s] %(message)s"
+)
 
 from textual.app import App, ComposeResult
 from textual.widgets import (
@@ -410,7 +417,7 @@ class ZeroNetTUI(App):
         t.daemon = True
         t.start()
 
-        # Welcome banner — defer slightly to ensure RichLog is fully ready
+        # Welcome banner - defer slightly to ensure RichLog is fully ready
         self.set_timer(0.2, self._print_welcome)
 
         # Update network info
@@ -548,7 +555,7 @@ class ZeroNetTUI(App):
         # Remember current selection index
         current_index = list_view.index
 
-        # remove_children() is synchronous — avoids DuplicateIds race with async clear()
+        # remove_children() is synchronous - avoids DuplicateIds race with async clear()
         list_view.remove_children()
 
         # Render groups first
@@ -768,7 +775,7 @@ class ZeroNetTUI(App):
         else:
             self.log_to_chat(
                 f"[#e3b341]ℹ Unknown command:[/] [#c9d1d9]{command}[/] "
-                f"[#484f58]— type /help[/]"
+                f"[#484f58]- type /help[/]"
             )
 
     def _handle_group_command(self, args: str):
@@ -960,7 +967,7 @@ class ZeroNetTUI(App):
         self.log_to_chat("[#e3b341]↩ File offer rejected[/]")
 
     def _handle_ping_command(self, args: str):
-        """Handle /ping <peer_name> — test connectivity to a peer."""
+        """Handle /ping <peer_name> - test connectivity to a peer."""
         peer_name = args.strip()
         if not peer_name:
             self.log_to_chat("[#e3b341]ℹ Usage:[/] [#c9d1d9]/ping <peer_name>[/]")
@@ -1231,7 +1238,7 @@ class ZeroNetTUI(App):
 
     def handle_file_offer_accepted(self, peer_id: str, transfer_id: str, file_port: int):
         self.log_to_chat(
-            "[bold #3fb950]✓ Peer accepted — uploading…[/]",
+            "[bold #3fb950]✓ Peer accepted - uploading...[/]",
             target=self.current_chat_target
         )
         self.network_manager.start_file_upload(peer_id, transfer_id, file_port)
@@ -1244,7 +1251,7 @@ class ZeroNetTUI(App):
 
     def handle_file_progress(self, transfer_id: str, bytes_transferred: int, bytes_total: int):
         pct = int((bytes_transferred / bytes_total) * 100) if bytes_total > 0 else 100
-        # Visual progress bar — update at 10% intervals to avoid flooding
+        # Visual progress bar - update at 10% intervals to avoid flooding
         filled = pct // 5
         bar = "█" * filled + "░" * (20 - filled)
         size_done = self._format_file_size(bytes_transferred)
@@ -1279,7 +1286,7 @@ class ZeroNetTUI(App):
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="ZeroNet — Secure P2P LAN Messenger (TUI)",
+        description="ZeroNet - Secure P2P LAN Messenger (TUI)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:

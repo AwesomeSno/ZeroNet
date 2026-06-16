@@ -1,0 +1,298 @@
+:root {
+    --bg-color: #050505;
+    --text-color: #33ff00;
+    --dim-text: #1a8000;
+    --highlight: #00ffcc;
+    --error: #ff3333;
+    --panel-border: #33ff00;
+    --font-main: 'VT323', monospace;
+    --font-heading: 'Press Start 2P', cursive;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-size: 20px;
+    line-height: 1.4;
+    overflow-x: hidden;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* CRT Scanlines and Flicker Effects */
+.crt-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(
+        rgba(18, 16, 16, 0) 50%,
+        rgba(0, 0, 0, 0.25) 50%
+    );
+    background-size: 100% 4px;
+    z-index: 100;
+    pointer-events: none;
+}
+
+.scanlines {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 100px rgba(51, 255, 0, 0.1) inset;
+    z-index: 99;
+    pointer-events: none;
+    animation: flicker 0.15s infinite;
+}
+
+@keyframes flicker {
+    0% { opacity: 0.95; }
+    50% { opacity: 0.9; }
+    100% { opacity: 0.95; }
+}
+
+::selection {
+    background: var(--text-color);
+    color: var(--bg-color);
+}
+
+.terminal-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+    position: relative;
+    z-index: 10;
+}
+
+/* Header */
+.retro-header {
+    margin-bottom: 30px;
+    text-align: center;
+    border-bottom: 2px dashed var(--dim-text);
+    padding-bottom: 20px;
+}
+
+.retro-header h1 {
+    font-family: var(--font-heading);
+    font-size: 24px;
+    color: var(--highlight);
+    margin-bottom: 15px;
+    text-shadow: 2px 2px 0px var(--dim-text);
+}
+
+.system-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+    color: var(--dim-text);
+}
+
+/* Glitch Effect */
+.glitch {
+    position: relative;
+}
+.glitch::before, .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: var(--bg-color);
+}
+.glitch::before {
+    left: 2px;
+    text-shadow: -1px 0 red;
+    clip: rect(24px, 550px, 90px, 0);
+    animation: glitch-anim-2 3s infinite linear alternate-reverse;
+}
+.glitch::after {
+    left: -2px;
+    text-shadow: -1px 0 blue;
+    clip: rect(85px, 550px, 140px, 0);
+    animation: glitch-anim 2.5s infinite linear alternate-reverse;
+}
+
+@keyframes glitch-anim {
+    0% { clip: rect(10px, 9999px, 86px, 0); }
+    20% { clip: rect(61px, 9999px, 16px, 0); }
+    40% { clip: rect(85px, 9999px, 45px, 0); }
+    60% { clip: rect(31px, 9999px, 78px, 0); }
+    80% { clip: rect(4px, 9999px, 92px, 0); }
+    100% { clip: rect(55px, 9999px, 2px, 0); }
+}
+@keyframes glitch-anim-2 {
+    0% { clip: rect(65px, 9999px, 100px, 0); }
+    20% { clip: rect(3px, 9999px, 52px, 0); }
+    40% { clip: rect(98px, 9999px, 17px, 0); }
+    60% { clip: rect(21px, 9999px, 84px, 0); }
+    80% { clip: rect(43px, 9999px, 29px, 0); }
+    100% { clip: rect(72px, 9999px, 66px, 0); }
+}
+
+/* Navigation */
+.retro-nav {
+    margin-bottom: 40px;
+}
+.retro-nav ul {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+.retro-nav a {
+    color: var(--text-color);
+    text-decoration: none;
+    padding: 5px 10px;
+    border: 1px solid transparent;
+}
+.retro-nav a:hover {
+    background-color: var(--text-color);
+    color: var(--bg-color);
+}
+
+/* Panels */
+.panel {
+    border: 2px solid var(--panel-border);
+    margin-bottom: 30px;
+    box-shadow: 0 0 10px rgba(51, 255, 0, 0.2);
+}
+.panel-header {
+    background-color: var(--panel-border);
+    color: var(--bg-color);
+    padding: 5px 10px;
+    font-weight: bold;
+}
+.panel-content {
+    padding: 15px;
+}
+
+/* Boot Sequence */
+#boot-text {
+    min-height: 150px;
+}
+.log-line { margin-bottom: 5px; }
+.log-line.ok { color: var(--highlight); }
+.log-line.err { color: var(--error); }
+
+/* Features */
+.feature-list {
+    list-style: none;
+}
+.feature-list li {
+    margin-bottom: 20px;
+}
+.feature-title {
+    display: block;
+    color: var(--highlight);
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+.feature-desc {
+    padding-left: 20px;
+    display: block;
+}
+
+/* Demo Area */
+.demo-area {
+    display: flex;
+    gap: 20px;
+    border-bottom: 1px dashed var(--dim-text);
+    padding-bottom: 15px;
+}
+@media (max-width: 700px) {
+    .demo-area { flex-direction: column; }
+}
+
+.demo-sidebar {
+    width: 250px;
+    border-right: 2px dashed var(--dim-text);
+    padding-right: 15px;
+}
+.demo-title {
+    background-color: var(--dim-text);
+    color: var(--bg-color);
+    padding: 2px 5px;
+    margin-bottom: 10px;
+    display: inline-block;
+}
+#demo-peers {
+    list-style: none;
+}
+#demo-peers li {
+    margin-bottom: 5px;
+}
+#demo-peers .online { color: var(--text-color); }
+#demo-peers .offline { color: var(--dim-text); }
+
+.demo-chat {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+.chat-log {
+    flex-grow: 1;
+    min-height: 200px;
+    margin-bottom: 15px;
+}
+.msg { margin-bottom: 5px; }
+.msg.sys { color: var(--highlight); }
+.msg.in .sender { color: var(--highlight); margin-right: 10px; }
+.msg.out .sender { color: var(--dim-text); margin-right: 10px; }
+
+.input-area {
+    display: flex;
+    align-items: center;
+}
+.prompt {
+    margin-right: 10px;
+}
+#demo-input {
+    background: transparent;
+    border: none;
+    color: var(--text-color);
+    font-family: var(--font-main);
+    font-size: 20px;
+    flex-grow: 1;
+    outline: none;
+}
+
+.crypto-debug {
+    padding: 15px;
+}
+.crypto-text {
+    word-break: break-all;
+    color: var(--dim-text);
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+/* Install Code Blocks */
+.code-block {
+    background: #000;
+    padding: 10px;
+    border: 1px dashed var(--dim-text);
+}
+.code-block .comment { color: var(--dim-text); }
+.code-block .command { color: var(--highlight); margin-left: 10px; }
+.code-block .command::before { content: "> "; color: var(--text-color); }
+
+/* Footer */
+.retro-footer {
+    text-align: center;
+    color: var(--dim-text);
+    margin-top: 50px;
+    border-top: 2px dashed var(--dim-text);
+    padding-top: 20px;
+}

@@ -3,8 +3,9 @@ from zeronet.crypto.manager import CryptoManager
 
 def test_crypto_key_generation():
     crypto = CryptoManager()
-    assert crypto.private_key is not None
-    assert crypto.public_key is not None
+    assert crypto._session is not None
+    assert crypto._session.private_key is not None
+    assert crypto._session.public_key is not None
     
     pub_bytes = crypto.get_public_bytes()
     assert len(pub_bytes) > 0

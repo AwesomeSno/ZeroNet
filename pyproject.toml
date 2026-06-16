@@ -1,6 +1,6 @@
 [project]
 name = "zeronet"
-version = "0.1.0"
+version = "1.0.0"
 description = "A serverless, peer-to-peer, end-to-end encrypted LAN messaging and file sharing app"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,3 +15,6 @@ dependencies = [
 dev = [
     "pytest>=7.0.0",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

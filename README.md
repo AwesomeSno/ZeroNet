@@ -8,8 +8,8 @@ ZeroNet Messenger enables direct, secure communication between devices on a loca
 
 ## ✨ Features
 
-- **📡 Zero-Configuration Discovery**: Automatically finds nearby ZeroNet devices using mDNS — no IP addresses to configure
-- **🔒 End-to-End Encryption**: ECDH key exchange + Fernet symmetric encryption — no one can read your messages
+- **📡 Zero-Configuration Discovery**: Automatically finds nearby ZeroNet devices using mDNS. No IP addresses to configure
+- **🔒 End-to-End Encryption**: ECDH key exchange + Fernet symmetric encryption. No one can read your messages
 - **💬 Real-Time Chat**: Direct P2P messaging over persistent TCP connections
 - **👥 Group Chats**: Full-mesh group conversations where each message is individually encrypted per member
 - **📁 File Sharing**: Stream files of any size with live progress bars, encrypted in transit
@@ -49,7 +49,7 @@ PYTHONPATH=. uv run python -m zeronet.tui --name "Alice"
 PYTHONPATH=. uv run python -m zeronet.tui --name "Bob" --port 54322
 ```
 
-### Start the GUI (PyQt6 — alternative)
+### Start the GUI (PyQt6 - alternative)
 ```bash
 PYTHONPATH=. uv run python -m zeronet.main
 ```

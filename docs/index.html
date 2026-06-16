@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZeroNet Messenger :: Secure P2P LAN Chat</title>
+    <meta name="description" content="ZeroNet is a serverless, peer-to-peer, end-to-end encrypted LAN messaging and file sharing application.">
+    <!-- Retro Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div class="scanlines"></div>
+
+    <div class="terminal-container">
+        <!-- Header -->
+        <header class="retro-header">
+            <h1 class="glitch" data-text="ZERONET_MESSENGER">ZERONET_MESSENGER</h1>
+            <div class="system-info">
+                <span>OS: UNKNOWN</span>
+                <span>STATUS: SECURE_LINK_ESTABLISHED</span>
+                <span>NODES: <span id="node-count">0</span></span>
+            </div>
+        </header>
+
+        <!-- Navigation as command prompt options -->
+        <nav class="retro-nav">
+            <ul>
+                <li><a href="#features">[1] FEATURES.TXT</a></li>
+                <li><a href="#demo">[2] INTERACTIVE_DEMO.EXE</a></li>
+                <li><a href="#arch">[3] ARCHITECTURE.SYS</a></li>
+                <li><a href="#install">[4] INSTALL.BAT</a></li>
+                <li><a href="https://github.com/AwesomeSno/ZeroNet" target="_blank">[5] GITHUB_REPO.URL</a></li>
+            </ul>
+        </nav>
+
+        <main>
+            <!-- Hero section presented as boot sequence / system log -->
+            <section id="boot-sequence" class="panel">
+                <div class="panel-header">C:\ZERONET\BOOT.LOG</div>
+                <div class="panel-content" id="boot-text">
+                    <!-- JavaScript will populate this -->
+                </div>
+            </section>
+
+            <!-- Features -->
+            <section id="features" class="panel">
+                <div class="panel-header">C:\ZERONET\FEATURES.TXT</div>
+                <div class="panel-content">
+                    <ul class="feature-list">
+                        <li>
+                            <span class="feature-title">>> ZERO-CONFIG DISCOVERY</span>
+                            <span class="feature-desc">mDNS broadcasting locates peers instantly. No IP typing required.</span>
+                        </li>
+                        <li>
+                            <span class="feature-title">>> END-TO-END ENCRYPTION</span>
+                            <span class="feature-desc">ECDH key exchange + Fernet symmetric encryption. Unbreakable local comms.</span>
+                        </li>
+                        <li>
+                            <span class="feature-title">>> SERVERLESS ARCHITECTURE</span>
+                            <span class="feature-desc">Direct P2P TCP connections. No cloud, no central server, no downtime.</span>
+                        </li>
+                        <li>
+                            <span class="feature-title">>> PEER-TO-PEER FILE SHARING</span>
+                            <span class="feature-desc">Encrypted file streams of any size over the LAN.</span>
+                        </li>
+                        <li>
+                            <span class="feature-title">>> MESH GROUP CHATS</span>
+                            <span class="feature-desc">Decentralized multi-user rooms with individual E2EE links.</span>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Demo -->
+            <section id="demo" class="panel">
+                <div class="panel-header">C:\ZERONET\DEMO.EXE</div>
+                <div class="panel-content demo-area">
+                    <div class="demo-sidebar">
+                        <div class="demo-title">PEERS</div>
+                        <ul id="demo-peers">
+                            <li class="online">[+] ALICE (192.168.1.4)</li>
+                            <li class="online">[+] BOB (192.168.1.5)</li>
+                            <li class="offline">[-] CHARLIE (OFFLINE)</li>
+                        </ul>
+                    </div>
+                    <div class="demo-chat">
+                        <div class="demo-title">SECURE COMM LINK: ALICE</div>
+                        <div id="demo-messages" class="chat-log">
+                            <div class="msg sys">*** E2EE SESSION ESTABLISHED ***</div>
+                            <div class="msg in"><span class="sender">&lt;ALICE&gt;</span> INITIATING SECURE HANDSHAKE...</div>
+                            <div class="msg in"><span class="sender">&lt;ALICE&gt;</span> WE ARE COMPLETELY OFF THE GRID.</div>
+                        </div>
+                        <div class="input-area">
+                            <span class="prompt">C:\></span>
+                            <input type="text" id="demo-input" placeholder="ENTER MESSAGE..." autocomplete="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="crypto-debug">
+                    <div class="demo-title">WIRE INTERCEPT DEBUGGER</div>
+                    <div id="crypto-output" class="crypto-text">AWAITING TRANSMISSION...</div>
+                </div>
+            </section>
+
+            <!-- Install -->
+            <section id="install" class="panel">
+                <div class="panel-header">C:\ZERONET\INSTALL.BAT</div>
+                <div class="panel-content">
+                    <div class="code-block">
+                        <div class="comment">REM CLONE THE REPOSITORY</div>
+                        <div class="command">git clone git@github.com:AwesomeSno/ZeroNet.git</div>
+                        <div class="command">cd ZeroNet</div>
+                        <br>
+                        <div class="comment">REM INSTALL DEPENDENCIES VIA UV</div>
+                        <div class="command">uv sync</div>
+                        <br>
+                        <div class="comment">REM LAUNCH TERMINAL UI</div>
+                        <div class="command">PYTHONPATH=. uv run python -m zeronet.tui --name "HACKER_MAN"</div>
+                        <br>
+                        <div class="comment">REM OR LAUNCH WIN95 GUI</div>
+                        <div class="command">PYTHONPATH=. uv run python -m zeronet.main</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="retro-footer">
+            <p>(C) 2026 ZERONET_SYSTEMS. ALL RIGHTS RESERVED.</p>
+            <p>END OF FILE.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
